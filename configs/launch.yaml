@@ -1,0 +1,71 @@
+# 流水线启动配置
+#
+# 用法：
+#   python scripts/launch_pipeline.py --config configs/launch.yaml
+#
+# 所有可调参数都在这里，不要改脚本代码。
+
+# 要用哪些 GPU。写几个 ID 就启动几个进程/用几张卡。
+# 例如 [0,1,2,3] 用 4 张；[0,1,2,3,4,5,6,7] 用 8 张。
+gpu_ids: [0, 1, 2, 3, 4, 5, 6, 7]
+
+# torchrun 多卡训练时的通信端口，共享机器上务必改成不冲突的端口。
+master_port: 29517
+
+# 日志目录。每个阶段会在这里写单独的 .log 文件。
+log_dir: outputs/launch_logs
+
+# 是否执行各个阶段。不需要的阶段就改成 false（按你的记忆规则：「不需要」= 就地移除，不是加门控）。
+stages:
+  prepare_data: true      # 划分数据，CPU 阶段
+  extract_features: true  # 并行抽特征
+  linear_probe: true      # backbone 大比拼
+  train: true             # 多卡微调
+  evaluate: true          # 评估 best.pt
+
+# ---- 阶段 0：数据划分 ----
+prepare_data:
+  config: configs/base.yaml
+
+# ---- 阶段 1：抽冻结特征 ----
+# 6 个候选会按 gpu_ids 循环分配，每张卡跑一个候选。
+# 如果候选数 > GPU 数，会分批跑；候选数 < GPU 数，只占用前面几张卡。
+extract_features:
+  configs:
+    - configs/base.yaml
+    - configs/bakeoff.yaml
+  candidates:
+    - clip_l336
+    - dinov3_l16
+    - dinov2_l14
+    - dinov2_b14
+    - siglip_so400m
+    - siglip2_b32
+  # 每个候选失败时是否继续跑下一个；false 表示任意候选失败就整体停止。
+  continue_on_error: true
+
+# ---- 阶段 2：线性探针 ----
+linear_probe:
+  configs:
+    - configs/base.yaml
+    - configs/bakeoff.yaml
+
+# ---- 阶段 3：微调 ----
+# 训练会用 stages.gpu_ids 里的全部卡做 DDP。
+train:
+  configs:
+    - configs/base.yaml
+    - configs/exp/exp001_clip_l336.yaml
+  # 可以在这里临时覆盖训练超参，例如 batch_size。
+  # 留空表示完全使用实验 YAML 里的值。
+  overrides: {}
+  # 示例（取消注释即可生效）：
+  # overrides:
+  #   train.batch_size: 128
+  #   train.epochs: 50
+
+# ---- 阶段 4：评估 ----
+evaluate:
+  config: configs/base.yaml
+  # checkpoint 路径支持占位符 {train.checkpoint_dir}，会自动从训练配置里取。
+  checkpoint: "{train.checkpoint_dir}/best.pt"

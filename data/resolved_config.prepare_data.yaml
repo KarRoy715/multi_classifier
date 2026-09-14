@@ -1,0 +1,80 @@
+data:
+  root: /tcfs/fs_dev/zhaoaohui/Project/VLM/multi_classifier/multi_data/data0910/rejudged
+  class_config: /tcfs/fs_dev/zhaoaohui/Project/VLM/multi_classifier/configs/classes.yaml
+  train_ratio: 0.8
+  seed: 42
+  phash_max_dist: 4
+  splits_out: /tcfs/fs_dev/zhaoaohui/Project/VLM/multi_classifier/data/splits.jsonl
+  materialize_mode: symlink
+  materialize_dir: /tcfs/fs_dev/zhaoaohui/Project/VLM/multi_classifier/data
+preprocess:
+  mode: letterbox
+  resolution: null
+  augment: mild
+model:
+  backbone: clip
+  model_name_or_path: models/clip-vit-large-patch14-336
+  unfreeze_blocks: 2
+  dropout: 0.3
+  hidden_dim: 256
+train:
+  epochs: 30
+  batch_size: 64
+  lr: 0.001
+  backbone_lr_multiplier: 0.1
+  weight_decay: 0.001
+  label_smoothing: 0.1
+  class_weight: sqrt
+  select_by: macro-f1
+  patience: 5
+  num_workers: 8
+  amp: bf16
+  seed: 42
+  grad_clip: 1.0
+  checkpoint_dir: /tcfs/fs_dev/zhaoaohui/Project/VLM/multi_classifier/checkpoints
+  wandb:
+    enabled: false
+    project: multi-classifier
+    run_name: null
+features:
+  out_dir: /tcfs/fs_dev/zhaoaohui/Project/VLM/multi_classifier/features
+  batch_size: 64
+  amp: bf16
+  flush_every: 20
+probe:
+  cs:
+  - 0.01
+  - 0.1
+  - 1.0
+  - 10.0
+  max_iter: 2000
+  knn_k: 20
+  mlp:
+    epochs: 40
+    lr: 0.001
+    weight_decay: 0.001
+    hidden: 256
+    dropout: 0.3
+    batch_size: 256
+    seed: 42
+    amp: bf16
+eval:
+  out_dir: /tcfs/fs_dev/zhaoaohui/Project/VLM/multi_classifier/outputs/eval
+  batch_size: 64
+  top_confusions: 15
+  confusion_matrix_png: true
+predict:
+  batch_size: 64
+  top_k: 3
+  out: null
+runtime:
+  models_root: /tcfs/fs_dev/zhaoaohui/models
+  device: cuda
+  seed: 42
+  hf_offline: true
+_provenance:
+  config_files:
+  - /tcfs/fs_dev/zhaoaohui/Project/VLM/multi_classifier/configs/base.yaml
+  git_commit: null
+  python: 3.11.15
+  platform: Linux-5.15.0-187-generic-x86_64-with-glibc2.35

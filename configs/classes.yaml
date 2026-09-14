@@ -1,0 +1,46 @@
+# 类别定义 —— 全项目唯一事实来源
+#
+# 注意：`index` 决定模型输出的类别下标，一旦开始训练就不要再调整顺序，
+# 否则旧 checkpoint 的预测会整体错位。
+#
+# 背景：原始数据集有 16 个目录（含「不相关」）。本项目明确不处理「不相关」，
+# 从数据划分开始就排除，因此这里只列 15 类。`exclude` 里的目录即使存在也会被跳过。
+
+num_classes: 15
+
+# 即使磁盘上存在也一律跳过（本项目范围外）
+exclude:
+  - 不相关
+  - 硬件ICT其他
+
+# 类别清单。index 必须从 0 连续递增。
+# unreliable: 样本量过小、类内一致性无保证，指标单独分区报告，不参与主口径 macro-F1。
+# n_expected: 编写本文件时的实测张数，仅用于数据准备时的对照告警（实际以磁盘为准）。
+classes:
+  - {index: 0,  name: PCB与电路板图片,     n_expected: 512,  unreliable: false}
+  - {index: 1,  name: 产品与结构图片,       n_expected: 1792, unreliable: false}
+  - {index: 2,  name: 仿真分析图片,         n_expected: 398,  unreliable: false}
+  - {index: 3,  name: 信号与波形图片,       n_expected: 1248, unreliable: false}
+  - {index: 4,  name: 制造工艺图片,         n_expected: 216,  unreliable: false}
+  - {index: 5,  name: 包装运输与仓储图片,   n_expected: 46,   unreliable: true}
+  - {index: 6,  name: 器件资料,             n_expected: 182,  unreliable: true}
+  - {index: 7,  name: 安装部署与运维图片,   n_expected: 147,  unreliable: true}
+  - {index: 8,  name: 工程实验图片,         n_expected: 308,  unreliable: false}
+  - {index: 9,  name: 故障与维修图片,       n_expected: 115,  unreliable: true}
+  - {index: 10, name: 文档与认证图片,       n_expected: 1065, unreliable: false}
+  - {index: 11, name: 测试与检测图片,       n_expected: 458,  unreliable: false}
+  - {index: 12, name: 电子元器件图片,       n_expected: 406,  unreliable: false}
+  - {index: 13, name: 电路与工程设计图,     n_expected: 4626, unreliable: false}
+  - {index: 14, name: 质量类,               n_expected: 10,   unreliable: true}
+
+# 命名不一致记录：原始目录名为「器件资料类」，复核输出统一写「器件资料」，
+# rejudged/ 下的实际目录名是「器件资料」。上面以实际目录名为准。
+# 若将来磁盘上出现「器件资料类」，用下面的别名映射兜底。
+aliases:
+  器件资料类: 器件资料
+
+# 复核期观测到的错误流向，用于人工看混淆矩阵时对照（不是硬约束）
+expected_confusions:
+  - {from: 电路与工程设计图, to: 产品与结构图片,   n_observed: 1313}
+  - {from: 电路与工程设计图, to: 文档与认证图片,   n_observed: 675}
+  - {from: 电子元器件图片,   to: 文档与认证图片,   n_observed: 192}

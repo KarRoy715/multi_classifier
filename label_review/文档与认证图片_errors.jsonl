@@ -1,0 +1,13 @@
+{"image_path": "multi_data/data0910/raw/文档与认证图片/0bc0dc50293842218be28f362e40f8db102c903594dc9fd91e2af8e6c8bee0b4.jpg", "current_label": "文档与认证图片", "reason": "商业服务产品页面，非技术文档或认证资料", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/18e103258d082ad1c408f5e8fa7290c347013b7daf4d4efd8b1e29f91b01d119.jpg", "current_label": "文档与认证图片", "reason": "能源采购指南报告封面，与ICT硬件无关", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/1ced1231a8cd2bbfff4703fdb96a7938081082bfda503515632f7ee0aed83f59.jpg", "current_label": "文档与认证图片", "reason": "空调室外机铭牌，属家电而非ICT硬件", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/361b3f3294ecb3596b6e8fee4b51a54dbdf57124b8eac1f5dbb60a43cff0a870.jpg", "current_label": "文档与认证图片", "reason": "冰箱铭牌，属家电而非ICT硬件", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/6746ed83476f6a76dd87282b914e7cec29005d2c9570754d2d86ebb7a16473a9.png", "current_label": "文档与认证图片", "reason": "模糊不可辨识的文本碎片，无法判断内容", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/8054c2f59f6f270c036ef4c25d64d98a12bc9c68db2f67040a5d91ecee06cfd4.jpg", "current_label": "文档与认证图片", "reason": "变频器LED状态与故障诊断对照表，属于故障维修资料", "suggested_label": "故障与维修图片"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/8a06bff31ca80d42f5615944c6505c0f72a03e431a368942f15704c27dd9c431.jpg", "current_label": "文档与认证图片", "reason": "电力电流互感器铭牌，属电力设备而非ICT硬件", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/9034e66b7333a9fb10c4bd3ea0c1a1bfd6c531889d1ffd17440517666dc96d40.jpg", "current_label": "文档与认证图片", "reason": "ASME压力容器认证铭牌模板，属机械压力设备而非ICT", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/a417f7c892b66d7949a20b42aaeb2ff079a78afd356edf2d1acae39a880d5958.jpg", "current_label": "文档与认证图片", "reason": "计算机网络安装实操教学作业单，属于安装部署资料", "suggested_label": "安装部署与运维图片"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/c262bf570781a3b55cb7e0f384950304a8fc617ba09463f6f9d5b2141ff47a6f.jpg", "current_label": "文档与认证图片", "reason": "汽车工程服务公司宣传册封面，非ICT硬件文档", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/c7c11843eb0f5ffba8937ad16b8874e68eea0ad851dd3a0e2d8519de1f5d97d9.jpg", "current_label": "文档与认证图片", "reason": "SMARTNESS智能家居品牌宣传页，非技术文档或认证", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/e591e3732b092784c2ef49aca36aa89fbee49cdfa9104720da562279fdce9245.jpg", "current_label": "文档与认证图片", "reason": "工业电机铭牌，属机械设备而非ICT硬件", "suggested_label": "不相关"}
+{"image_path": "multi_data/data0910/raw/文档与认证图片/f1227d9e60bf179e851f4c83c74cd4711f6d218a2f2aa078ae8389a465577ee2.jpg", "current_label": "文档与认证图片", "reason": "汽车工程服务宣传页，非ICT硬件文档", "suggested_label": "不相关"}

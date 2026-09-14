@@ -1,0 +1,13 @@
+candidate,backbone,resolution,feat_dim,probe,accuracy,macro_f1,macro_f1_reliable,weighted_f1
+siglip_so400m,siglip,384,1152,mlp,0.7302,0.5896,0.6242,0.73
+clip_l336,clip,336,768,mlp,0.7121,0.5596,0.5966,0.7085
+siglip_so400m,siglip,384,1152,logreg,0.6723,0.5373,0.5929,0.6917
+clip_l336,clip,336,768,logreg,0.6602,0.5041,0.5686,0.6776
+dinov3_l16,dinov3,224,1024,mlp,0.7008,0.5299,0.5663,0.6951
+siglip2_b32,siglip,256,768,mlp,0.6891,0.5002,0.5566,0.6816
+siglip_so400m,siglip,384,1152,knn,0.7103,0.4434,0.5486,0.6783
+dinov3_l16,dinov3,224,1024,logreg,0.62,0.4488,0.5383,0.6468
+siglip2_b32,siglip,256,768,logreg,0.5966,0.4198,0.5143,0.6257
+clip_l336,clip,336,768,knn,0.6896,0.3777,0.4959,0.643
+siglip2_b32,siglip,256,768,knn,0.6645,0.3525,0.4641,0.6165
+dinov3_l16,dinov3,224,1024,knn,0.6818,0.3749,0.4621,0.6353

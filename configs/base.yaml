@@ -1,0 +1,104 @@
+# 全局默认配置
+#
+# 用法：脚本按顺序深合并多个 YAML，后者覆盖前者。例如
+#   python scripts/train.py --config configs/base.yaml --config configs/exp/exp001_clip_l336.yaml
+# 实验文件只需要写「与默认不同的部分」。
+#
+# 所有相对路径都相对于项目根目录（multi_classifier/）。
+
+data:
+  # 图片根目录，下面一级子目录名即类别名
+  root: multi_data/data0910/rejudged
+  class_config: configs/classes.yaml
+  train_ratio: 0.8
+  seed: 42
+  # dHash 汉明距离阈值：<= 该值视为近重复，必须落进同一个 split。
+  # 实测本库存在近重复（md5 无重复但 dHash 有 48 对完全相同），设为 0 可关闭分组。
+  phash_max_dist: 4
+  # 划分产物
+  splits_out: data/splits.jsonl
+  # 供 train.py 的 ImageFolder 使用的物化目录；symlink 不占额外空间
+  materialize_mode: symlink        # symlink | copy
+  materialize_dir: data
+
+preprocess:
+  mode: letterbox                  # letterbox | crop
+  augment: mild                    # none | mild
+
+model:
+  backbone: clip                   # clip | dinov3 | dinov2 | siglip | resnet
+  # 相对于 runtime.models_root；换机器时通常只需要改 models_root
+  model_name_or_path: clip-vit-large-patch14-336
+  # null = 用 backbone 原生分辨率。这是分辨率的**规范位置**，
+  # 实验文件要改分辨率请写这里（preprocess.resolution 是已废弃的旧写法）。
+  resolution: null
+  unfreeze_blocks: 2               # 0 = 完全冻结（只训 head）
+  dropout: 0.3
+  hidden_dim: 256
+
+train:
+  epochs: 30
+  batch_size: 64
+  lr: 1.0e-3                       # 分类头学习率
+  backbone_lr_multiplier: 0.1      # backbone 学习率 = lr * 该倍数
+  weight_decay: 1.0e-3             # 兄弟项目教训：过拟合，用 1e-3 而非 1e-4
+  label_smoothing: 0.1             # 兄弟项目诊断点名缺失的杠杆
+  class_weight: sqrt               # auto（逆频率）| sqrt（逆频率开方）| none
+  select_by: macro-f1              # loss | macro-f1；不均衡任务用 macro-f1
+  patience: 5
+  num_workers: 8
+  amp: bf16                        # bf16 | fp16 | none
+  seed: 42
+  grad_clip: 1.0
+  checkpoint_dir: checkpoints
+  wandb:
+    enabled: false
+    project: multi-classifier
+    run_name: null
+
+# 以下三节被 extract_features.py / linear_probe.py 使用
+features:
+  out_dir: features
+  batch_size: 64
+  amp: bf16
+  # 断点续跑：每多少个 batch 落盘一次
+  flush_every: 20
+
+probe:
+  # 特征归一化。CLIP/DINO/SigLIP 这类模型用 L2 归一化通常明显优于原始特征，
+  # 因为线性探针与 kNN 都对特征尺度敏感。
+  normalize: l2                    # l2 | standard | none
+  cs: [0.01, 0.1, 1.0, 10.0]       # LogisticRegression 的 C 扫描
+  max_iter: 2000
+  knn_k: 20
+  mlp:
+    epochs: 40
+    lr: 1.0e-3
+    weight_decay: 1.0e-3
+    hidden: 256
+    dropout: 0.3
+    batch_size: 256
+    seed: 42
+    amp: bf16
+
+eval:
+  # 要评估的 checkpoint。也可用 --checkpoint 覆盖。
+  checkpoint: checkpoints/best.pt
+  out_dir: outputs/eval
+  batch_size: 64
+  top_confusions: 15               # 报告最易混类对的数量
+  confusion_matrix_png: true
+
+predict:
+  batch_size: 64
+  top_k: 3
+  out: null                        # null = 打到 stdout
+
+runtime:
+  # 模型权重的搜索根目录。bakeoff.yaml 里的 model_name_or_path 是相对这里的路径，
+  # 换机器时只改这一处即可。
+  models_root: /mnt/fs_dev/zhaoaohui/models
+  device: cuda
+  seed: 42
+  # 设为 true 时禁止访问 HuggingFace（离线环境）
+  hf_offline: true

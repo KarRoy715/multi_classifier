@@ -1,0 +1,13 @@
+{
+  "name": "dinov3_l16",
+  "backbone": "dinov3",
+  "model_name_or_path": "/mnt/fs_dev/zhaoaohui/models/dinov3-vitl16-pretrain",
+  "resolution": 224,
+  "preprocess": "letterbox",
+  "feat_dim": 1024,
+  "n_images": 11529,
+  "dtype": "float16",
+  "amp": "bf16",
+  "torch": "2.13.0+cu130",
+  "splits_file": "/mnt/fs_dev/zhaoaohui/Project/VLM/multi_classifier/data/splits.jsonl"
+}

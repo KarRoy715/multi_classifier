@@ -1,0 +1,29 @@
+# 实验 001 —— 冻结特征 backbone 大比拼的胜者（占位示例）
+#
+# 实验文件的写法：只写「与 base.yaml 不同的部分」，深合并后生效。
+# 目前 backbone 先填 clip_l336（兄弟项目基准），等 linear_probe.py 跑完
+# 大比拼后，把这里换成胜者即可，其余参数不用动。
+#
+# 运行：
+#   python scripts/train.py --config configs/base.yaml --config configs/exp/exp001_clip_l336.yaml
+
+model:
+  backbone: clip
+  model_name_or_path: clip-vit-large-patch14-336
+  resolution: 336
+  # 兄弟项目二分类时用 4 层且已过拟合，15 类任务先降到 2 层。
+  # 若 val 迟迟不涨、train 也没拟合上去，再往上加。
+  unfreeze_blocks: 2
+
+train:
+  epochs: 30
+  batch_size: 64
+  lr: 1.0e-3
+  weight_decay: 1.0e-3
+  label_smoothing: 0.1
+  class_weight: sqrt
+  select_by: macro-f1
+  checkpoint_dir: checkpoints/exp001_clip_l336
+  wandb:
+    enabled: false
+    run_name: exp001_clip_l336

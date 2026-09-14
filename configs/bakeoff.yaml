@@ -1,0 +1,56 @@
+# Backbone 大比拼候选
+#
+# 每个候选抽一份冻结特征缓存（features/{name}.npy），再用 linear_probe.py 统一评估。
+# model_name_or_path 相对于 base.yaml 的 runtime.models_root。
+#
+# 全部候选已在本机实测可离线加载并前向通过。feat_dim 是实测值，
+# 用于抽特征时自检——对不上说明加载到了非预期的模型，直接报错而不是静默跑下去。
+
+candidates:
+  - name: clip_l336
+    backbone: clip
+    model_name_or_path: clip-vit-large-patch14-336
+    resolution: 336
+    feat_dim: 768
+    note: 兄弟项目二分类的最优 backbone，作为本次的基准线
+
+  - name: dinov3_l16
+    backbone: dinov3
+    model_name_or_path: dinov3-vitl16-pretrain
+    resolution: 224
+    feat_dim: 1024
+    note: 较新的自监督 backbone，RoPE 位置编码，分辨率灵活
+
+  - name: dinov2_l14
+    backbone: dinov2
+    model_name_or_path: dinov2_vitl14
+    resolution: 224
+    feat_dim: 1024
+
+  - name: dinov2_b14
+    backbone: dinov2
+    model_name_or_path: dinov2-base
+    resolution: 224
+    feat_dim: 768
+    note: 小模型对照，用来确认大模型是否真的值得
+
+  - name: siglip_so400m
+    backbone: siglip
+    model_name_or_path: siglip
+    resolution: 384
+    feat_dim: 1152
+
+  - name: siglip2_b32
+    backbone: siglip
+    model_name_or_path: siglip2-base-p32-256-ve
+    resolution: 256
+    feat_dim: 768
+
+# 分辨率消融：兄弟项目结论是「448 ≈ 336，分辨率不是杠杆」。
+# 这里用 RoPE 的 dinov3 复核一次该结论在本数据上是否成立（RoPE 天然支持变分辨率）。
+# 默认关闭，用 --include-ablation 打开。
+resolution_ablation:
+  enabled: false
+  base_candidate: dinov3_l16
+  resolution: 448
+  name_suffix: _r448

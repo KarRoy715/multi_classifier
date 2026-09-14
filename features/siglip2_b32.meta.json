@@ -1,0 +1,13 @@
+{
+  "name": "siglip2_b32",
+  "backbone": "siglip",
+  "model_name_or_path": "/mnt/fs_dev/zhaoaohui/models/siglip2-base-p32-256-ve",
+  "resolution": 256,
+  "preprocess": "letterbox",
+  "feat_dim": 768,
+  "n_images": 11529,
+  "dtype": "float16",
+  "amp": "bf16",
+  "torch": "2.13.0+cu130",
+  "splits_file": "/mnt/fs_dev/zhaoaohui/Project/VLM/multi_classifier/data/splits.jsonl"
+}

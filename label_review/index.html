@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Review 可视化</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card-enter {
+            animation: fadeInUp 0.3s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .image-hover:hover img { transform: scale(1.03); }
+        .image-hover img { transition: transform 0.3s ease; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-[1600px] mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Label Review 可视化</h1>
+                <p class="text-sm text-slate-500 mt-0.5">多分类标签审核结果查看</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <select id="file-select" class="px-3 py-2 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300 min-w-[240px]">
+                    <option value="">选择 JSONL 文件...</option>
+                </select>
+                <div class="text-right">
+                    <div class="text-2xl font-bold text-slate-800" id="total-count">0</div>
+                    <div class="text-xs text-slate-500">当前文件</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="bg-white border-b border-slate-200">
+        <div class="max-w-[1600px] mx-auto px-4 py-3 flex flex-wrap gap-3 items-center" id="stats-bar">
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                <span class="text-xs font-medium text-slate-500">Errors</span>
+                <span class="text-sm font-bold text-red-600" id="stat-errors">0</span>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                <span class="text-xs font-medium text-slate-500">Correct</span>
+                <span class="text-sm font-bold text-emerald-600" id="stat-correct">0</span>
+            </div>
+            <div class="w-px h-8 bg-slate-200 hidden md:block"></div>
+            <div id="suggested-stats" class="flex flex-wrap gap-2"></div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="max-w-[1600px] mx-auto px-4 py-4">
+        <div class="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-slate-600">类型:</span>
+                <div class="flex gap-1.5" id="type-filters">
+                    <button data-filter="all" class="tf-btn active px-3 py-1.5 text-sm rounded-lg border transition-colors bg-slate-800 text-white border-slate-800">全部</button>
+                    <button data-filter="error" class="tf-btn px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors">仅 Errors</button>
+                    <button data-filter="correct" class="tf-btn px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition-colors">仅 Correct</button>
+                </div>
+            </div>
+            <div class="w-px h-6 bg-slate-200 hidden sm:block"></div>
+            <div class="flex items-center gap-2" id="suggested-filter-wrap">
+                <span class="text-sm font-medium text-slate-600">建议标签:</span>
+                <select id="suggested-select" class="px-2 py-1.5 text-sm rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-slate-300">
+                    <option value="all">全部</option>
+                </select>
+            </div>
+            <div class="flex-1"></div>
+            <div class="relative">
+                <input type="text" id="search-input" placeholder="搜索 reason / label..."
+                    class="pl-9 pr-4 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-300 w-52 transition-all focus:w-72">
+                <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery -->
+    <div class="max-w-[1600px] mx-auto px-4">
+        <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            <!-- Cards injected here -->
+        </div>
+        <div id="empty-state" class="hidden text-center py-20">
+            <svg class="w-16 h-16 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <p class="text-slate-500 text-lg">没有匹配的结果</p>
+            <p class="text-slate-400 text-sm mt-1">尝试调整筛选条件</p>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="max-w-[1600px] mx-auto px-4 py-6 pb-12">
+        <div id="pagination" class="hidden flex items-center justify-center gap-2">
+            <button id="page-first" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">首页</button>
+            <button id="page-prev" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+            <div id="page-numbers" class="flex items-center gap-1"></div>
+            <button id="page-next" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+            <button id="page-last" class="px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">末页</button>
+            <span class="text-sm text-slate-500 ml-2">每页</span>
+            <select id="page-size" class="px-2 py-1 text-sm rounded border border-slate-200 bg-white">
+                <option value="30">30</option>
+                <option value="60" selected>60</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+            </select>
+            <span class="text-sm text-slate-500">条</span>
+            <span class="text-sm text-slate-400 ml-3" id="page-info"></span>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="fixed inset-0 z-50 hidden bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
+        <button id="lightbox-close" class="absolute top-4 right-4 text-white/80 hover:text-white p-2">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+        <div class="max-w-5xl max-h-[90vh] flex flex-col items-center w-full">
+            <img id="lightbox-img" src="" alt="" class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl">
+            <div class="mt-4 text-center w-full px-4">
+                <div class="flex items-center justify-center gap-2 mb-2 flex-wrap">
+                    <span id="lb-current" class="px-3 py-1 rounded-full text-sm font-bold border bg-slate-100 text-slate-700 border-slate-200">当前: </span>
+                    <span class="text-white/60">→</span>
+                    <span id="lb-suggested" class="px-3 py-1 rounded-full text-sm font-bold border">建议: </span>
+                </div>
+                <p id="lb-reason" class="text-white/90 text-base max-w-2xl mx-auto"></p>
+                <p id="lb-path" class="text-white/50 text-xs mt-2 font-mono"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PAGE_SIZE_DEFAULT = 60;
+        const MAX_VISIBLE_PAGES = 7;
+
+        let allData = [];
+        let filteredData = [];
+        let currentFile = '';
+        let currentTypeFilter = 'all';
+        let currentSuggestedFilter = 'all';
+        let currentSearch = '';
+        let currentPage = 1;
+        let pageSize = PAGE_SIZE_DEFAULT;
+        let availableFiles = [];
+
+        function normalizePath(p) {
+            // Strip absolute project path prefix if present
+            const absPrefix = '/tcfs/fs_dev/zhaoaohui/Project/VLM/image_classifier/';
+            if (p.startsWith(absPrefix)) return p.slice(absPrefix.length);
+            // Strip leading slash if any other absolute path sneaks in
+            if (p.startsWith('/') && !p.startsWith('//')) return p.slice(1);
+            return p;
+        }
+
+        // ===== Discovery =====
+        async function discoverFiles() {
+            const select = document.getElementById('file-select');
+            try {
+                const dirUrl = window.location.href.replace(/\/?[^\/]*$/, '/') || './';
+                const resp = await fetch(dirUrl);
+                const text = await resp.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                const links = Array.from(doc.querySelectorAll('a'));
+                availableFiles = links
+                    .map(a => decodeURIComponent(a.getAttribute('href') || ''))
+                    .filter(h => h && h.endsWith('.jsonl') && !h.startsWith('../'))
+                    .map(h => h.replace(/^\.\//, ''));
+            } catch (e) {}
+
+            if (availableFiles.length === 0) {
+                const categories = [
+                    'PCB与电路板图片', '产品与结构图片', '仿真分析图片', '信号与波形图片',
+                    '制造工艺图片', '包装运输与仓储图片', '器件资料类', '安装部署与运维图片',
+                    '工程实验图片', '故障与维修图片', '文档与认证图片', '测试与检测图片',
+                    '电子元器件图片', '电路与工程设计图', '质量类'
+                ];
+                const probes = categories.flatMap(c => [`${c}_errors.jsonl`, `${c}_correct.jsonl`]);
+                for (const f of probes) {
+                    try {
+                        const r = await fetch(f, { method: 'HEAD' });
+                        if (r.ok && !availableFiles.includes(f)) availableFiles.push(f);
+                    } catch (e) {}
+                }
+            }
+
+            availableFiles.sort();
+            select.innerHTML = '<option value="">选择 JSONL 文件...</option>';
+            availableFiles.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f;
+                select.appendChild(opt);
+            });
+
+            if (availableFiles.length > 0) {
+                select.value = availableFiles[0];
+                loadData(availableFiles[0]);
+            }
+        }
+
+        // ===== Load Data =====
+        async function loadData(filename) {
+            currentFile = filename;
+            currentPage = 1;
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = `
+                <div class="col-span-full text-center py-20">
+                    <div class="inline-block w-8 h-8 border-2 border-slate-300 border-t-slate-800 rounded-full animate-spin"></div>
+                    <p class="text-slate-500 mt-3">加载 ${filename} 中...</p>
+                </div>
+            `;
+            document.getElementById('pagination').classList.add('hidden');
+
+            try {
+                const resp = await fetch(filename);
+                const text = await resp.text();
+                const lines = text.trim().split('\n').filter(l => l.trim());
+
+                allData = [];
+                // Parse in chunks to avoid blocking UI on huge files
+                const chunkSize = 2000;
+                for (let i = 0; i < lines.length; i += chunkSize) {
+                    const chunk = lines.slice(i, i + chunkSize);
+                    const parsed = chunk.map((line, idx) => {
+                        const obj = JSON.parse(line);
+                        obj.id = i + idx;
+                        obj.image_path = normalizePath(obj.image_path);
+                        obj.imgPath = '../' + obj.image_path;
+                        obj.thumbPath = 'thumbnails/' + obj.image_path;
+                        obj.isError = obj.suggested_label !== obj.current_label;
+                        return obj;
+                    });
+                    allData.push(...parsed);
+                    if (i + chunkSize < lines.length) {
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+                }
+
+                updateStats();
+                populateSuggestedFilter();
+                applyFilters();
+            } catch (err) {
+                console.error(err);
+                gallery.innerHTML = `
+                    <div class="col-span-full text-center py-20 text-red-500">
+                        加载失败: ${filename}<br><span class="text-sm text-slate-500">确保文件与此 HTML 在同一目录</span>
+                    </div>
+                `;
+            }
+        }
+
+        // ===== Stats =====
+        function updateStats() {
+            const total = allData.length;
+            const errors = allData.filter(d => d.isError).length;
+            const correct = total - errors;
+
+            document.getElementById('total-count').textContent = total.toLocaleString();
+            document.getElementById('stat-errors').textContent = errors;
+            document.getElementById('stat-correct').textContent = correct;
+
+            const dist = {};
+            allData.forEach(d => { dist[d.suggested_label] = (dist[d.suggested_label] || 0) + 1; });
+            const sorted = Object.entries(dist).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            document.getElementById('suggested-stats').innerHTML = sorted.map(([label, count]) => {
+                const pct = total > 0 ? Math.round(count / total * 100) : 0;
+                return `
+                    <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
+                        <span class="text-xs text-slate-600 truncate max-w-[100px]" title="${label}">${label}</span>
+                        <span class="text-xs font-bold text-slate-800">${count}</span>
+                        <span class="text-[10px] text-slate-400">${pct}%</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function populateSuggestedFilter() {
+            const select = document.getElementById('suggested-select');
+            const labels = [...new Set(allData.map(d => d.suggested_label))].sort();
+            select.innerHTML = '<option value="all">全部建议标签</option>';
+            labels.forEach(l => {
+                const opt = document.createElement('option');
+                opt.value = l;
+                opt.textContent = l;
+                select.appendChild(opt);
+            });
+        }
+
+        // ===== Filtering =====
+        function applyFilters() {
+            filteredData = allData.filter(item => {
+                const matchType = currentTypeFilter === 'all'
+                    || (currentTypeFilter === 'error' && item.isError)
+                    || (currentTypeFilter === 'correct' && !item.isError);
+                const matchSuggested = currentSuggestedFilter === 'all' || item.suggested_label === currentSuggestedFilter;
+                const matchSearch = !currentSearch
+                    || item.reason.toLowerCase().includes(currentSearch.toLowerCase())
+                    || item.current_label.toLowerCase().includes(currentSearch.toLowerCase())
+                    || item.suggested_label.toLowerCase().includes(currentSearch.toLowerCase())
+                    || item.image_path.toLowerCase().includes(currentSearch.toLowerCase());
+                return matchType && matchSuggested && matchSearch;
+            });
+            currentPage = 1;
+            renderPage();
+        }
+
+        // ===== Pagination & Rendering =====
+        function renderPage() {
+            const gallery = document.getElementById('gallery');
+            const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            if (filteredData.length === 0) {
+                gallery.innerHTML = '';
+                document.getElementById('empty-state').classList.remove('hidden');
+                document.getElementById('pagination').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('pagination').classList.remove('hidden');
+
+            const start = (currentPage - 1) * pageSize;
+            const end = Math.min(start + pageSize, filteredData.length);
+            const pageItems = filteredData.slice(start, end);
+
+            // Scroll to top of gallery smoothly
+            if (window.scrollY > 200) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            gallery.innerHTML = pageItems.map((item, idx) => {
+                const suggestedClass = getSuggestedStyle(item.suggested_label, item.isError);
+                const errorBadge = item.isError
+                    ? `<span class="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-500 text-white">ERROR</span>`
+                    : `<span class="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-bold rounded bg-emerald-500 text-white">OK</span>`;
+
+                return `
+                    <div class="card-enter bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer group"
+                         style="animation-delay: ${Math.min(idx * 25, 300)}ms"
+                         onclick="openLightbox(${item.id})">
+                        <div class="image-hover relative aspect-square bg-slate-100 overflow-hidden">
+                            <img src="${item.thumbPath}"
+                                 alt="${item.reason}"
+                                 class="w-full h-full object-cover"
+                                 loading="lazy"
+                                 onerror="onThumbError(this, '${item.imgPath}')">
+                            ${errorBadge}
+                        </div>
+                        <div class="p-3">
+                            <div class="flex items-center gap-1.5 mb-2 flex-wrap">
+                                <span class="px-2 py-0.5 text-[11px] rounded border bg-slate-100 text-slate-600 border-slate-200">${item.current_label}</span>
+                                <span class="text-slate-300">→</span>
+                                <span class="px-2 py-0.5 text-[11px] rounded border ${suggestedClass}">${item.suggested_label}</span>
+                            </div>
+                            <p class="text-sm text-slate-700 line-clamp-3 leading-relaxed">${item.reason}</p>
+                            <p class="text-[11px] text-slate-400 mt-2 truncate font-mono">${item.image_path.split('/').pop()}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            renderPagination(totalPages, start + 1, end, filteredData.length);
+        }
+
+        function renderPagination(totalPages, startIdx, endIdx, totalItems) {
+            const firstBtn = document.getElementById('page-first');
+            const prevBtn = document.getElementById('page-prev');
+            const nextBtn = document.getElementById('page-next');
+            const lastBtn = document.getElementById('page-last');
+            const numbersDiv = document.getElementById('page-numbers');
+
+            firstBtn.disabled = currentPage <= 1;
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            lastBtn.disabled = currentPage >= totalPages;
+
+            document.getElementById('page-info').textContent =
+                `第 ${startIdx}-${endIdx} 条，共 ${totalItems.toLocaleString()} 条，${totalPages} 页`;
+
+            // Page numbers
+            let pages = [];
+            if (totalPages <= MAX_VISIBLE_PAGES) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+                let start = Math.max(1, currentPage - 3);
+                let end = Math.min(totalPages, start + MAX_VISIBLE_PAGES - 1);
+                if (end - start < MAX_VISIBLE_PAGES - 1) start = Math.max(1, end - MAX_VISIBLE_PAGES + 1);
+                for (let i = start; i <= end; i++) pages.push(i);
+            }
+
+            numbersDiv.innerHTML = pages.map(p => {
+                const active = p === currentPage;
+                return `<button data-page="${p}" class="page-num px-3 py-1.5 text-sm rounded-lg border transition-colors ${active ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}">${p}</button>`;
+            }).join('');
+        }
+
+        function goToPage(p) {
+            const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize));
+            if (p < 1) p = 1;
+            if (p > totalPages) p = totalPages;
+            if (p === currentPage) return;
+            currentPage = p;
+            renderPage();
+        }
+
+        // ===== Image helpers =====
+        function onThumbError(img, originalSrc) {
+            img.onerror = function() {
+                img.onerror = null;
+                img.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 text-sm">图片加载失败</div>';
+            };
+            img.src = originalSrc;
+        }
+
+        // ===== Styles =====
+        function getSuggestedStyle(label, isError) {
+            if (label === '不相关') return 'bg-red-100 text-red-700 border-red-200';
+            if (isError) return 'bg-orange-100 text-orange-700 border-orange-200';
+            return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        }
+
+        // ===== Lightbox =====
+        function openLightbox(id) {
+            const item = allData.find(d => d.id === id);
+            if (!item) return;
+            document.getElementById('lightbox-img').src = item.imgPath;
+            document.getElementById('lb-current').textContent = '当前: ' + item.current_label;
+            const sug = document.getElementById('lb-suggested');
+            sug.textContent = '建议: ' + item.suggested_label;
+            sug.className = `px-3 py-1 rounded-full text-sm font-bold border ${getSuggestedStyle(item.suggested_label, item.isError)}`;
+            document.getElementById('lb-reason').textContent = item.reason;
+            document.getElementById('lb-path').textContent = item.image_path;
+            document.getElementById('lightbox').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        // ===== Event Listeners =====
+        document.getElementById('file-select').addEventListener('change', e => {
+            if (e.target.value) loadData(e.target.value);
+        });
+
+        document.getElementById('type-filters').addEventListener('click', e => {
+            if (e.target.classList.contains('tf-btn')) {
+                document.querySelectorAll('#type-filters .tf-btn').forEach(btn => {
+                    btn.classList.remove('active', 'bg-slate-800', 'text-white', 'border-slate-800');
+                    btn.classList.add('border-slate-200', 'text-slate-600');
+                });
+                e.target.classList.add('active', 'bg-slate-800', 'text-white', 'border-slate-800');
+                e.target.classList.remove('border-slate-200', 'text-slate-600');
+                currentTypeFilter = e.target.dataset.filter;
+                applyFilters();
+            }
+        });
+
+        document.getElementById('suggested-select').addEventListener('change', e => {
+            currentSuggestedFilter = e.target.value;
+            applyFilters();
+        });
+
+        document.getElementById('search-input').addEventListener('input', e => {
+            currentSearch = e.target.value.trim();
+            applyFilters();
+        });
+
+        // Pagination controls
+        document.getElementById('page-first').addEventListener('click', () => goToPage(1));
+        document.getElementById('page-prev').addEventListener('click', () => goToPage(currentPage - 1));
+        document.getElementById('page-next').addEventListener('click', () => goToPage(currentPage + 1));
+        document.getElementById('page-last').addEventListener('click', () => goToPage(Math.ceil(filteredData.length / pageSize)));
+        document.getElementById('page-size').addEventListener('change', e => {
+            pageSize = parseInt(e.target.value);
+            currentPage = 1;
+            renderPage();
+        });
+        document.getElementById('page-numbers').addEventListener('click', e => {
+            if (e.target.classList.contains('page-num')) {
+                goToPage(parseInt(e.target.dataset.page));
+            }
+        });
+
+        document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+        document.getElementById('lightbox').addEventListener('click', e => {
+            if (e.target === e.currentTarget) closeLightbox();
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+        // Init
+        discoverFiles();
+    </script>
+</body>
+</html>

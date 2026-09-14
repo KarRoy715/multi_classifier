@@ -1,0 +1,34 @@
+# multi_classifier 依赖
+#
+# 版本是本机实测跑通的组合（python 3.11），不是猜测值。
+# 安装：pip install -r requirements.txt
+#
+# 若目标机器已有 CUDA 版 torch，请先按官网命令装好 torch/torchvision，
+# 再执行本文件（否则 pip 可能给你装成 CPU 版）：
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu124
+#   pip install -r requirements.txt
+
+# ---- 核心 ----
+# transformers >= 5.15 是硬性要求：dinov3 的模型类型（dinov3_vit）在更早的版本里不存在，
+# 加载 dinov3-vitl16-pretrain 会直接报未知模型类型。
+transformers>=5.15.0
+torch>=2.4
+torchvision>=0.19
+huggingface-hub>=0.23
+safetensors>=0.4
+
+# ---- 数据处理与指标 ----
+numpy>=1.26            # 需要 2.x 才自带 np.bitwise_count；1.x 下 prepare_data.py 会自动退回查表实现
+pillow>=10.0
+PyYAML>=6.0
+scikit-learn>=1.3      # linear_probe.py 的 LogisticRegression / kNN / 指标
+
+# ---- 报告与可视化 ----
+# evaluate.py 画混淆矩阵需要；不装的话加 --no_plot 也能跑完其余部分
+matplotlib>=3.7
+
+# ---- 可选 ----
+# 进度条。不装也能跑（train.py 里有 try/except 兜底），只是看不到进度
+tqdm>=4.66
+# 实验跟踪。默认关闭（configs/base.yaml 的 train.wandb.enabled=false）
+# wandb>=0.16
