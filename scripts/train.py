@@ -338,7 +338,7 @@ def main() -> int:
     # ---- 损失 ----
     class_weights = build_class_weights(
         cfg["train"]["class_weight"],
-        torch.tensor([train_ds.targets.count(c) for c in range(num_classes)]),
+        torch.bincount(torch.tensor(train_ds.targets), minlength=num_classes),
         device,
     )
     label_smoothing = float(cfg["train"]["label_smoothing"])
@@ -546,13 +546,6 @@ def main() -> int:
         wandb.finish()
     cleanup_distributed(world_size)
     return 0
-
-
-def _collate(batch, proc):
-    """先应用 processor 再 stack。processor 已包含 ToTensor+Normalize，故此处只做堆叠。"""
-    images, labels = zip(*batch)
-    return torch.stack(list(images)), torch.tensor(labels, dtype=torch.long)
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

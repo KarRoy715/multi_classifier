@@ -86,6 +86,8 @@ eval:
   checkpoint: checkpoints/best.pt
   out_dir: outputs/eval
   batch_size: 64
+  # 评估时的 AMP。留空/null 则继承 train.amp（保持兼容）。
+  amp: null
   top_confusions: 15               # 报告最易混类对的数量
   confusion_matrix_png: true
 

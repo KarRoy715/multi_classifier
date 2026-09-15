@@ -21,6 +21,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import build_from_checkpoint, load_checkpoint  # noqa: E402
 from config import (  # noqa: E402
     add_config_args,
     config_from_args,
@@ -29,7 +30,6 @@ from config import (  # noqa: E402
     setup_hf_env,
 )
 from dataset import IMAGE_SUFFIXES, get_image_processor  # noqa: E402
-from evaluate import build_from_checkpoint, load_checkpoint  # noqa: E402
 from PIL import Image  # noqa: E402
 
 Image.MAX_IMAGE_PIXELS = None
@@ -171,12 +171,14 @@ def main() -> int:
             print(f"  {j + 1}. {item['label']:<24} {item['prob']:>7.2%}  {bar}")
         if args.show_all_probs:
             print("\n全部类别概率（按概率降序）：")
-            # 单图时 topk 只取了 k 个，这里补一次完整前向以列出 15 类
-            with torch.no_grad():
-                with Image.open(r["path"]) as im:
-                    x = proc(im.convert("RGB")).unsqueeze(0).to(device)
-                logits = head(backbone(x))
-                probs = torch.softmax(logits.float(), dim=-1)[0].cpu().tolist()
+            probs = r.get("all_probs")
+            if probs is None:
+                # 兜底：旧路径或 want_all_probs 未传时再补一次前向
+                with torch.no_grad():
+                    with Image.open(r["path"]) as im:
+                        x = proc(im.convert("RGB")).unsqueeze(0).to(device)
+                    logits = head(backbone(x))
+                    probs = torch.softmax(logits.float(), dim=-1)[0].cpu().tolist()
             for name, prob in sorted(zip(class_names, probs), key=lambda t: -t[1]):
                 print(f"  {name:<24} {prob:>7.2%}")
 

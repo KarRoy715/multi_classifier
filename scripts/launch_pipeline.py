@@ -28,7 +28,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from config import Config, add_config_args, config_from_args  # noqa: E402
+from config import Config, add_config_args, config_from_args, get_override  # noqa: E402
 
 
 def run_cmd(cmd: list[str], log_path: Path, env: dict[str, str] | None = None) -> int:
@@ -180,9 +180,13 @@ def stage_evaluate(cfg: Config, log_dir: Path) -> None:
     print("=" * 70)
 
     checkpoint_template: str = cfg["evaluate.checkpoint"]
-    train_checkpoint_dir = cfg.get_path("train.overrides.train.checkpoint_dir", None)
+
+    # 1) 优先读 launch.yaml 里 train.overrides 的临时覆盖（平面 dot-key）
+    overrides = cfg.get_path("train.overrides") or {}
+    train_checkpoint_dir = get_override(overrides, "train.checkpoint_dir")
+
+    # 2) 其次从训练配置里找 checkpoint_dir
     if train_checkpoint_dir is None:
-        # 从训练配置里找 checkpoint_dir
         train_cfg_path = cfg["train.configs"][-1]
         import yaml
         with Path(train_cfg_path).open("r", encoding="utf-8") as f:

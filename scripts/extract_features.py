@@ -32,6 +32,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import cache_paths, load_records  # noqa: E402
 from config import (  # noqa: E402
     add_config_args,
     config_from_args,
@@ -46,27 +47,6 @@ from model import BackboneWrapper  # noqa: E402
 from PIL import Image  # noqa: E402
 
 Image.MAX_IMAGE_PIXELS = None
-
-
-def load_records(splits_file: Path) -> list[dict]:
-    records = []
-    with splits_file.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                records.append(json.loads(line))
-    # 固定顺序，保证多次运行时行序一致
-    records.sort(key=lambda r: r["path"])
-    return records
-
-
-def cache_paths(out_dir: Path, name: str) -> dict[str, Path]:
-    return {
-        "npy": out_dir / f"{name}.npy",
-        "index": out_dir / f"{name}.index.jsonl",
-        "meta": out_dir / f"{name}.meta.json",
-        "done": out_dir / f"{name}.done.json",
-    }
 
 
 def read_done(path: Path) -> int:

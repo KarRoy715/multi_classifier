@@ -27,6 +27,7 @@ import numpy as np
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import build_from_checkpoint, load_checkpoint  # noqa: E402
 from config import (  # noqa: E402
     add_config_args,
     config_from_args,
@@ -37,7 +38,6 @@ from config import (  # noqa: E402
     setup_hf_env,
 )
 from dataset import build_dataset, get_dataloaders, get_image_processor, make_collate  # noqa: E402
-from model import ClassifierHead, load_backbone_from_checkpoint  # noqa: E402
 
 # 中文字体候选。找不到就退回用类别序号当标签——总比渲染成一堆方框强。
 _CJK_FONTS = [
@@ -66,40 +66,9 @@ def setup_cjk_font() -> bool:
     return False
 
 
-def load_checkpoint(path: Path, device) -> dict:
-    if not path.exists():
-        raise FileNotFoundError(f"checkpoint 不存在：{path}")
-    ckpt = torch.load(path, map_location="cpu", weights_only=False)
-    for key in ("head_state_dict", "backbone", "num_classes"):
-        if key not in ckpt:
-            raise KeyError(
-                f"checkpoint 缺少必需字段 {key!r}。"
-                "若是旧版本 train.py 存的，请重新训练。"
-            )
-    return ckpt
-
-
-def build_from_checkpoint(ckpt: dict, cfg, device):
-    """按 checkpoint 的元信息重建 backbone + head。配置只做兜底。"""
-    models_root = cfg["runtime"]["models_root"]
-    backbone = load_backbone_from_checkpoint(ckpt, models_root)
-    head = ClassifierHead(
-        input_dim=int(ckpt["input_dim"]),
-        hidden_dim=int(ckpt.get("hidden_dim", 256)),
-        num_classes=int(ckpt["num_classes"]),
-        dropout=float(ckpt.get("dropout", 0.3)),
-    )
-    head.load_state_dict(ckpt["head_state_dict"])
-    if "backbone_state_dict" in ckpt:
-        backbone.load_state_dict(ckpt["backbone_state_dict"])
-    backbone.to(device).eval()
-    head.to(device).eval()
-    return backbone, head
-
-
 @torch.no_grad()
 def infer(backbone, head, loader, device, num_classes: int, amp: bool, amp_dtype):
-    """跑一遍推理，返回 (路径列表, 真实标签, 预测标签, 各类概率, 用于显示的路径列表)。"""
+    """跑一遍推理，返回 (真实标签, 预测标签, 各类概率)。"""
     all_probs, all_true, all_pred = [], [], []
     for pixel_values, labels in loader:
         pixel_values = pixel_values.to(device, non_blocking=True)
@@ -365,7 +334,9 @@ def main() -> int:
     )
     print(f"样本数：{len(ds)}（{args.split}）\n")
 
-    amp = cfg["train"]["amp"]
+    amp = cfg.get_path("eval.amp")
+    if amp is None:
+        amp = cfg["train"]["amp"]
     amp_dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "none": None}[amp]
     y_true, y_pred, probs = infer(
         backbone, head, loader, device, num_classes,

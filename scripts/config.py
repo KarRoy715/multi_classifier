@@ -371,6 +371,17 @@ def config_from_args(args: argparse.Namespace) -> Config:
     return load_config(args.config, args.override)
 
 
+def get_override(overrides: dict[str, Any] | None, key: str) -> Any | None:
+    """从 launch.yaml 的 flat overrides 字典里按字面量 dot-key 取值。
+
+    Config.__getitem__ 会按 '.' 拆分嵌套路径，因此像 `train.checkpoint_dir`
+    这种作为平面字典键存在的覆盖值不能直接用 cfg.get_path 读取。
+    """
+    if not overrides:
+        return None
+    return overrides.get(key)
+
+
 def describe(cfg: Config) -> str:
     """一行摘要，脚本启动时打印，方便在日志里认实验。"""
     m = cfg["model"]

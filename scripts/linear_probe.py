@@ -35,8 +35,8 @@ import torch.nn as nn
 warnings.filterwarnings("ignore", category=FutureWarning, module="sklearn")
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import cache_paths, load_records  # noqa: E402
 from config import add_config_args, config_from_args, load_class_config, save_resolved  # noqa: E402
-from extract_features import cache_paths, load_records  # noqa: E402
 
 try:
     from sklearn.linear_model import LogisticRegression
